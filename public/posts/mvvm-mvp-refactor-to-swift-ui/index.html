@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>使用 MVP UI Design Pattern 將基於 UIKit 的 Toy project 重構到 SwiftUI | Programming Notes 程式筆記</title>
+<meta name="keywords" content="">
+<meta name="description" content="摘要： 本篇筆記實驗如何使用 MVP Pattern 將基於 UIKit 和 MVC Pattern 的 legacy code 遷移到 iOS 平台新的 UI framweork - SwiftUI. 筆記一開始點出了使用 MVC 實作一個 toy project 帶來的問題，與 migrate 到 swiftUI 的動機，接著介紹了 MVVM, MVP Pattern 在 Clean Architecture 的分層結構中所處的位置，與加入 Presentation Layer 所帶來的好處，並為使用 MVP 或 MVVM pattern 進行 SwiftUI 的 migration 做了一個簡單的比較。筆記最後展示了使用 MVP 對一個 toy project 進行 migration 的結果。
+狀況： Apple 在 2019 年的 WWDC 推出了新的 UI framework - SwiftUI。隨著 iOS 15 的問世，SwiftUI 也越來越成熟。SwiftUI 提供宣告式 (declarative) 的 api, 讓開法者可以更有效率的進行 UI 開發，是時候開始將老舊的 codebase migrate 到 swiftUI 了。">
+<meta name="author" content="">
+<link rel="canonical" href="https://examplesite.com/posts/mvvm-mvp-refactor-to-swift-ui/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.7140587df96a2b1a49eb723fa7063dc0c641a6cb638f3140e8d3beb4deae4f5c.css" integrity="sha256-cUBYfflqKxpJ63I/pwY9wMZBpstjjzFA6NO&#43;tN6uT1w=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://examplesite.com/assets/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://examplesite.com/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://examplesite.com/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://examplesite.com/apple-touch-icon.png">
+<link rel="mask-icon" href="https://examplesite.com/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:title" content="使用 MVP UI Design Pattern 將基於 UIKit 的 Toy project 重構到 SwiftUI" />
+<meta property="og:description" content="摘要： 本篇筆記實驗如何使用 MVP Pattern 將基於 UIKit 和 MVC Pattern 的 legacy code 遷移到 iOS 平台新的 UI framweork - SwiftUI. 筆記一開始點出了使用 MVC 實作一個 toy project 帶來的問題，與 migrate 到 swiftUI 的動機，接著介紹了 MVVM, MVP Pattern 在 Clean Architecture 的分層結構中所處的位置，與加入 Presentation Layer 所帶來的好處，並為使用 MVP 或 MVVM pattern 進行 SwiftUI 的 migration 做了一個簡單的比較。筆記最後展示了使用 MVP 對一個 toy project 進行 migration 的結果。
+狀況： Apple 在 2019 年的 WWDC 推出了新的 UI framework - SwiftUI。隨著 iOS 15 的問世，SwiftUI 也越來越成熟。SwiftUI 提供宣告式 (declarative) 的 api, 讓開法者可以更有效率的進行 UI 開發，是時候開始將老舊的 codebase migrate 到 swiftUI 了。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://examplesite.com/posts/mvvm-mvp-refactor-to-swift-ui/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2022-02-08T11:58:39+08:00" />
+<meta property="article:modified_time" content="2022-02-08T11:58:39+08:00" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="使用 MVP UI Design Pattern 將基於 UIKit 的 Toy project 重構到 SwiftUI"/>
+<meta name="twitter:description" content="摘要： 本篇筆記實驗如何使用 MVP Pattern 將基於 UIKit 和 MVC Pattern 的 legacy code 遷移到 iOS 平台新的 UI framweork - SwiftUI. 筆記一開始點出了使用 MVC 實作一個 toy project 帶來的問題，與 migrate 到 swiftUI 的動機，接著介紹了 MVVM, MVP Pattern 在 Clean Architecture 的分層結構中所處的位置，與加入 Presentation Layer 所帶來的好處，並為使用 MVP 或 MVVM pattern 進行 SwiftUI 的 migration 做了一個簡單的比較。筆記最後展示了使用 MVP 對一個 toy project 進行 migration 的結果。
+狀況： Apple 在 2019 年的 WWDC 推出了新的 UI framework - SwiftUI。隨著 iOS 15 的問世，SwiftUI 也越來越成熟。SwiftUI 提供宣告式 (declarative) 的 api, 讓開法者可以更有效率的進行 UI 開發，是時候開始將老舊的 codebase migrate 到 swiftUI 了。"/>
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://examplesite.com/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "使用 MVP UI Design Pattern 將基於 UIKit 的 Toy project 重構到 SwiftUI",
+      "item": "https://examplesite.com/posts/mvvm-mvp-refactor-to-swift-ui/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "使用 MVP UI Design Pattern 將基於 UIKit 的 Toy project 重構到 SwiftUI",
+  "name": "使用 MVP UI Design Pattern 將基於 UIKit 的 Toy project 重構到 SwiftUI",
+  "description": "摘要： 本篇筆記實驗如何使用 MVP Pattern 將基於 UIKit 和 MVC Pattern 的 legacy code 遷移到 iOS 平台新的 UI framweork - SwiftUI. 筆記一開始點出了使用 MVC 實作一個 toy project 帶來的問題，與 migrate 到 swiftUI 的動機，接著介紹了 MVVM, MVP Pattern 在 Clean Architecture 的分層結構中所處的位置，與加入 Presentation Layer 所帶來的好處，並為使用 MVP 或 MVVM pattern 進行 SwiftUI 的 migration 做了一個簡單的比較。筆記最後展示了使用 MVP 對一個 toy project 進行 migration 的結果。\n狀況： Apple 在 2019 年的 WWDC 推出了新的 UI framework - SwiftUI。隨著 iOS 15 的問世，SwiftUI 也越來越成熟。SwiftUI 提供宣告式 (declarative) 的 api, 讓開法者可以更有效率的進行 UI 開發，是時候開始將老舊的 codebase migrate 到 swiftUI 了。",
+  "keywords": [
+    
+  ],
+  "articleBody": "摘要： 本篇筆記實驗如何使用 MVP Pattern 將基於 UIKit 和 MVC Pattern 的 legacy code 遷移到 iOS 平台新的 UI framweork - SwiftUI. 筆記一開始點出了使用 MVC 實作一個 toy project 帶來的問題，與 migrate 到 swiftUI 的動機，接著介紹了 MVVM, MVP Pattern 在 Clean Architecture 的分層結構中所處的位置，與加入 Presentation Layer 所帶來的好處，並為使用 MVP 或 MVVM pattern 進行 SwiftUI 的 migration 做了一個簡單的比較。筆記最後展示了使用 MVP 對一個 toy project 進行 migration 的結果。\n狀況： Apple 在 2019 年的 WWDC 推出了新的 UI framework - SwiftUI。隨著 iOS 15 的問世，SwiftUI 也越來越成熟。SwiftUI 提供宣告式 (declarative) 的 api, 讓開法者可以更有效率的進行 UI 開發，是時候開始將老舊的 codebase migrate 到 swiftUI 了。\n我們選用 onevcat 王巍大大的 toy project ToDoDemo 作為實驗的對象，onevcat 在他的 blog [8] 中詳細介紹了在僅僅 100 多行的 MVC 實作中隱藏了哪些暗潮洶湧的 code smell, 並將之重構到單向數據流的函數式 View Controller. 本篇筆記不再詳細覆述這些 code smell, 僅指出散落在 line 24, 29, 74, 86 的 presentation logic 即使抽取成 TableViewController 中的一個函數，仍然會和 UIKit 耦合在一起。我們需要一個新的物件去讓這些被抽取出來的函數能夠安身立命，而且這個物件是不能 import UIKit 的，如果能做到這點，我們就能把 UIKit 相關的 code 都隔離開來，並且替換成 SwiftUI。\n行動： 參考 Uncle Bob 的 Clean Architecture 分層結構 [1]，我們發現 Interface Adapter (綠色) 的 Presenter 就是我們需要的物件 (注意圖中洋蔥圈的依賴方向，外層的洋蔥圈依賴裡面一層的洋蔥圈，而且不可跨層)：\n事實上，這樣的 UI Pattern 在 mobile app 的生態圈已經被提出來過，分別就是我們常聽到的 MVVM [2] 和 MVP [3] 架構。事實上，MVVM 和 MVP 嚴格說起來不能算是mobile app 的整個架構 (architecture), 只能算是處理 mobile app 中 UI 部分的邏輯的 Design Pattern, 整個 mobile app 還會包含業務邏輯 (business logic, use cases), 導航 (Navigation, Routing) 等邏輯，當這些邏輯出現的時候，我們會再需要其他的物件去分拆這些職責。[4]\n把 MVVM 和 MVP 的 class diagram 畫出來，並在不同 layer 上的物件塗上對應 Bob Clean Architecture 分層結構的顏色，就能夠一目瞭然了：\n不難發現，MVVM 和 MVP 在結構上是非常類似的，都有一個物件 (ViewMode/Presenter) 來把 model 層的資料介接給 UI 層來顯示。\n差別只在於 MVVM 通常會搭配特定的 binding framework, 因此 ViewModel 會和 3rd. party framework (ex. RxSwift＆RxRelay/Combine) 有另外的耦合，UI 層的物件也需要依賴 3rd. party framwork 的 extension (ex. RxCocoa/CombineCocoa) 來讓 binding 的工作簡化：\nDeclarative data and command-binding are implicit in the MVVM pattern. In the Microsoft solution stack, the binder is a markup language called XAML.[9] The binder frees the developer from being obliged to write boiler-plate logic to synchronize the view model and view. When implemented outside of the Microsoft stack, the presence of a declarative data binding technology is what makes this pattern possible,[5][10] and without a binder, one would typically use MVP or MVC instead and have to write more boilerplate (or generate it with some other tool). - Model–view–viewmodel, Wikipedia.\n而 MVP 則是切出了一個 AbstractView 的介面 (interface, 即 Swift 中的 Protocol), 讓 UI Layer 的物件去實作行為。 Presenter 則創建了 UI 層物件可以 access 的 ViewData object (pure data, no behavior), 並透過這個 AbstractView interface 傳遞訊息給 UI Layer 的物件。不同的 UI framwork 都可以去實作這個 AbstractView 的介面，讓 Presenter 和 model 可以被重用：\nMVP is a user interface architectural pattern engineered to facilitate automated unit testing and improve the separation of concerns in presentation logic: a. The model is an interface defining the data to be displayed or otherwise acted upon in the user interface. b. The view is a passive interface that displays data (the model) and routes user commands (events) to the presenter to act upon that data. c. The presenter acts upon the model and the view. It retrieves data from repositories (the model), and formats it for display in the view. Model-view-presenter, Wikipedia.\nWikipedia 中 Ｃ# 的 MVP 範例：\npublic class DomainView : IDomainView { private IDomainPresenter _domainPresenter = null; /// Constructor. public DomainView() { _domainPresenter = new ConcreteDomainPresenter(this); } } 如同 Wikipedia 的詞條所描述，MVVM 的 binding framwork (ex. RxSwift/Combine) 讓開發者用統一的宣告式 (declarative) API 來定義資料流 (stream)，並提供了一系列的 operator 對這些 stream 進行操作，讓我們的腦袋可以專注在這些 stream 的互動所定義的業務邏輯，而不需要花心思在個別 stream 的不同實作細節 (ex. IBAction, KVO, closure callback) 上。\nAndré Staltz 的 The introduction to Reactive Programming you've been missing [5] 為這些 binding framwork 背後的 motivation 做了詳細的解釋：\nReactive programming is programming with asynchronous data streams. … You are able to create data streams of anything, not just from click and hover events. Streams are cheap and ubiquitous, anything can be a stream: variables, user inputs, properties, caches, data structures, etc. For example, imagine your Twitter feed would be a data stream in the same fashion that click events are. You can listen to that stream and react accordingly. On top of that, you are given an amazing toolbox of functions to combine, create and filter any of those streams - The introduction to Reactive Programming you’ve been missing\nWhy should I consider adopting RP? Reactive Programming raises the level of abstraction of your code so you can focus on the interdependence of events that define the business logic , rather than having to constantly fiddle with a large amount of implementation details. Code in RP will likely be more concise. - The introduction to Reactive Programming you’ve been missing\nThe Combine framework provides a declarative Swift API for processing values over time. These values can represent many kinds of asynchronous events. - The Combine framework documentation\n因此，若我們的 app 中有很複雜的 async stream 在交互影響 (ex WWDC 2019, session 722 中的 Login Screen), 選擇使用 MVVM pattern 會較為合理，但由於 ViewModel, ui component 甚至 model layer 都會和特定的 framework 耦合在一起, 將來要替換 framework 的時候，成本也可能跟著升高 (ex. 使用 RxCombine migrate from RxSwift to Combine [6] )。\n我們選用 MVP 作為我們 migration to swfitUI 實驗的 pattern, 讓 presenter 最多只依賴於 Foundation 中的資料結構。\nMigration 的起手式，就是為 VC 加入 unit testing, 這裡只貼 testing case 的 interface, 完整的實作放在 link 裡面：\ninternal class ToDoDemoTests : XCTestCase { internal func test_viewDidLoad_requestToDos() internal func test_renderTwoSections() internal func test_renderOneTableViewInputCellOnInputSection() internal func test_renderEmptyToDos_onEmptyToDo() internal func test_renderOneToDo_OnOneToDo() internal func test_renderManyToDo_onManyToDo() internal func test_renderToDoCounts() internal func test_renderAddAction() internal func test_renderAddedToDo_onAdd() internal func test_disableAddAction_afterAdd() internal func test_removeToDo_onRemove() internal func test_shouldHaveNoMemoryLeakAndNoCrash_onGetToDoServiceEmitValueAfterSutDeallocated() } 接著讓 SwiftUI View 去實作各個 Abstract View Protocol (注意 SwiftUI 提供的各種 property wrapper 都被集中在 view layer, Presenter 是不需要 import SwiftUI 的 )：\nstruct ToDoListView: View { private class ToDoListViewModel: ObservableObject { @Published var title = \"\" @Published var todos: [ToDoViewData] = [] @Published var inputText = \"\" @Published var addActionEnabled = false } @ObservedObject private var viewModel: ToDoListViewModel = ToDoListViewModel() var body: some View { NavigationView { List { SwiftUI.Section(\"input\") { TextField(viewModel.inputText, text: $viewModel.inputText) .onChange(of: viewModel.inputText) { newValue in presenter.inputText(newValue) } } SwiftUI.Section(\"todos\") { ForEach(Array(zip(viewModel.todos.indices, viewModel.todos)), id: \\.1.id) { idx, todo in Button(action: { presenter.removeToDo(at: idx) }, label: { Text(todo.title) }) } } }.navigationBarItems( trailing: Button(action: { presenter.insertToDo(viewModel.inputText) }) { Image(systemName: \"plus\") }.disabled(!viewModel.addActionEnabled) ).navigationBarTitle( Text(viewModel.title), displayMode: .inline ) }.onAppear { presenter.getInitialViewData() presenter.fetchToDo() } } let presenter: TablePresenter! init(presenter: TablePresenter) { self.presenter = presenter } } extension ToDoListView: TitleView { func didUpDateTitle(_ title: String) { viewModel.title = title } } extension ToDoListView: TableView { func didUpdateTable() { viewModel.todos = presenter.toDoViewDatas() } } extension ToDoListView: AddActionView { func didUpdateAddActionView(isEnabled: Bool) { viewModel.addActionEnabled = isEnabled } } extension ToDoListView: InputView { func didUpdateInputText(_ text: String) { viewModel.inputText = text } } //MARK: - TablePresenter + SwiftUI extension TablePresenter { func toDoViewDatas() -\u003e [ToDoViewData] { (0..",
+  "wordCount" : "1196",
+  "inLanguage": "en",
+  "datePublished": "2022-02-08T11:58:39+08:00",
+  "dateModified": "2022-02-08T11:58:39+08:00",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://examplesite.com/posts/mvvm-mvp-refactor-to-swift-ui/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Programming Notes 程式筆記",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://examplesite.com/assets/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://examplesite.com/" accesskey="h" title="Programming Notes 程式筆記 (Alt + H)">Programming Notes 程式筆記</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title">
+      使用 MVP UI Design Pattern 將基於 UIKit 的 Toy project 重構到 SwiftUI
+    </h1>
+    <div class="post-meta"><span title='2022-02-08 11:58:39 +0800 CST'>February 8, 2022</span>
+
+</div>
+  </header> 
+  <div class="post-content"><h3 id="摘要">摘要：<a hidden class="anchor" aria-hidden="true" href="#摘要">#</a></h3>
+<p>本篇筆記實驗如何使用 MVP Pattern 將基於 UIKit 和 MVC Pattern 的 legacy code 遷移到 iOS 平台新的 UI framweork - SwiftUI. 筆記一開始點出了使用 MVC 實作一個 toy project 帶來的問題，與 migrate 到 swiftUI 的動機，接著介紹了 MVVM, MVP Pattern 在 Clean Architecture 的分層結構中所處的位置，與加入 Presentation Layer 所帶來的好處，並為使用 MVP 或 MVVM pattern 進行 SwiftUI 的 migration 做了一個簡單的比較。筆記最後展示了使用 MVP 對一個 toy project 進行 migration 的結果。</p>
+<h3 id="狀況">狀況：<a hidden class="anchor" aria-hidden="true" href="#狀況">#</a></h3>
+<p>Apple 在 2019 年的 WWDC 推出了新的 UI framework - SwiftUI。隨著 iOS 15 的問世，SwiftUI 也越來越成熟。SwiftUI 提供宣告式 (declarative) 的 api, 讓開法者可以更有效率的進行 UI 開發，是時候開始將老舊的 codebase migrate 到 swiftUI 了。</p>
+<p>我們選用 onevcat 王巍大大的 toy project <a href="https://github.com/onevcat/ToDoDemo/blob/basic/ToDoDemo/TableViewController.swift#L6">ToDoDemo</a> 作為實驗的對象，onevcat 在他的 blog [<a href="https://onevcat.com/2017/07/state-based-viewcontroller/">8</a>] 中詳細介紹了在僅僅 100 多行的 MVC 實作中隱藏了哪些暗潮洶湧的 code smell, 並將之重構到單向數據流的函數式 View Controller. 本篇筆記不再詳細覆述這些 code smell, 僅指出散落在 line <a href="https://github.com/onevcat/ToDoDemo/blob/dd66572689b1de5e10c99a5fcecd1816d99c1cb8/ToDoDemo/TableViewController.swift#L24">24</a>, <a href="https://github.com/onevcat/ToDoDemo/blob/dd66572689b1de5e10c99a5fcecd1816d99c1cb8/ToDoDemo/TableViewController.swift#L29">29</a>, <a href="https://github.com/onevcat/ToDoDemo/blob/dd66572689b1de5e10c99a5fcecd1816d99c1cb8/ToDoDemo/TableViewController.swift#L74">74</a>, <a href="https://github.com/onevcat/ToDoDemo/blob/dd66572689b1de5e10c99a5fcecd1816d99c1cb8/ToDoDemo/TableViewController.swift#L86">86</a> 的 presentation logic 即使抽取成 <code>TableViewController</code> 中的一個函數，仍然會和 UIKit 耦合在一起。我們需要一個新的物件去讓這些被抽取出來的函數能夠安身立命，而且這個物件是不能 import UIKit 的，如果能做到這點，我們就能把 UIKit 相關的 code 都隔離開來，並且替換成 SwiftUI。</p>
+<h3 id="行動">行動：<a hidden class="anchor" aria-hidden="true" href="#行動">#</a></h3>
+<p>參考 Uncle Bob 的 Clean Architecture 分層結構 [<a href="https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html">1</a>]，我們發現 Interface Adapter (綠色) 的 Presenter 就是我們需要的物件 (注意圖中洋蔥圈的依賴方向，外層的洋蔥圈依賴裡面一層的洋蔥圈，而且不可跨層)：</p>
+<p><img loading="lazy" src="https://blog.cleancoder.com/uncle-bob/images/2012-08-13-the-clean-architecture/CleanArchitecture.jpg" alt="Diagram for Clean Architecture"  />
+</p>
+<p>事實上，這樣的 UI Pattern 在 mobile app 的生態圈已經被提出來過，分別就是我們常聽到的 MVVM [<a href="https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel">2</a>] 和 MVP [<a href="https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93presenter">3</a>] 架構。事實上，MVVM 和 MVP 嚴格說起來不能算是mobile app 的整個架構 (architecture), 只能算是處理 mobile app 中 UI 部分的邏輯的 Design Pattern, 整個 mobile app 還會包含業務邏輯 (business logic, use cases), 導航 (Navigation, Routing) 等邏輯，當這些邏輯出現的時候，我們會再需要其他的物件去分拆這些職責。[<a href="https://chiahsien.github.io/post/common-ios-architecture-from-mvc-to-viper-with-redux/">4</a>]</p>
+<p>把 MVVM 和 MVP 的 class diagram 畫出來，並在不同 layer 上的物件塗上對應 Bob Clean Architecture 分層結構的顏色，就能夠一目瞭然了：</p>
+<p><img loading="lazy" src="https://raw.githubusercontent.com/ctwdtw/Notes/develop/mvvm-mvp.png" alt="Class Diagram for MVVM &amp;amp; MVP"  />
+</p>
+<p>不難發現，MVVM 和 MVP 在結構上是非常類似的，都有一個物件 (ViewMode/Presenter) 來把 model 層的資料介接給 UI 層來顯示。</p>
+<p>差別只在於 MVVM 通常會搭配特定的 binding framework, 因此 ViewModel 會和 3rd. party framework (ex. RxSwift＆RxRelay/Combine) 有另外的耦合，UI 層的物件也需要依賴 3rd. party framwork 的 extension (ex. RxCocoa/CombineCocoa) 來讓 binding 的工作簡化：</p>
+<blockquote>
+<p>Declarative data and command-binding are implicit in the MVVM pattern. In the Microsoft solution stack, the binder is a markup language called XAML.[9] The binder frees the developer from being obliged to write boiler-plate logic to synchronize the view model and view. When implemented outside of the Microsoft stack, the presence of a declarative data binding technology is what makes this pattern possible,[5][10] and <!-- raw HTML omitted -->without a binder, one would typically use MVP or MVC instead and have to write more boilerplate (or generate it with some other tool).<!-- raw HTML omitted --> - Model–view–viewmodel, Wikipedia.</p>
+</blockquote>
+<p>而 MVP 則是切出了一個 <code>AbstractView</code> 的介面 (interface, 即 Swift 中的 <code>Protocol</code>), 讓 UI Layer 的物件去實作行為。 Presenter 則創建了 UI 層物件可以 access 的 <code>ViewData</code> object (pure data, no behavior), 並透過這個 <code>AbstractView</code> interface 傳遞訊息給 UI Layer 的物件。不同的 UI framwork 都可以去實作這個 <code>AbstractView</code> 的介面，讓 Presenter 和 model 可以被重用：</p>
+<blockquote>
+<p>MVP is a user interface architectural pattern engineered to facilitate automated unit testing and improve the separation of concerns in presentation logic:
+a. The model is an interface defining the data to be displayed or otherwise acted upon in the user interface.
+b. <!-- raw HTML omitted -->The view is a passive interface that displays data (the model) and routes user commands (events) to the presenter to act upon that data.<!-- raw HTML omitted -->
+c. The presenter acts upon the model and the view. It retrieves data from repositories (the model), and formats it for display in the view. Model-view-presenter, Wikipedia.</p>
+</blockquote>
+<p>Wikipedia 中 Ｃ# 的 MVP 範例：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-csharp" data-lang="csharp"><span style="display:flex;"><span><span style="color:#66d9ef">public</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DomainView</span> : IDomainView
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> IDomainPresenter _domainPresenter = <span style="color:#66d9ef">null</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/// &lt;summary&gt;Constructor.&lt;/summary&gt;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">public</span> DomainView()
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>        _domainPresenter = <span style="color:#66d9ef">new</span> ConcreteDomainPresenter(<span style="color:#66d9ef">this</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>如同 Wikipedia 的詞條所描述，MVVM 的 binding framwork (ex. RxSwift/Combine) 讓開發者用統一的宣告式 (declarative) API 來定義資料流 (stream)，並提供了一系列的 operator 對這些 stream 進行操作，讓我們的腦袋可以專注在這些 stream 的互動所定義的業務邏輯，而不需要花心思在個別 stream 的不同實作細節 (ex. IBAction, KVO, closure callback) 上。</p>
+<p>André Staltz 的 <code>The introduction to Reactive Programming you've been missing</code> [<a href="https://gist.github.com/staltz/868e7e9bc2a7b8c1f754">5</a>] 為這些 binding framwork 背後的 motivation 做了詳細的解釋：</p>
+<blockquote>
+<p>Reactive programming is programming with asynchronous data streams.
+&hellip; You are able to create data streams of anything, not just from click and hover events. Streams are cheap and ubiquitous, anything can be a stream: variables, user inputs, properties, caches, data structures, etc. For example, imagine your Twitter feed would be a data stream in the same fashion that click events are. You can listen to that stream and react accordingly. On top of that, <!-- raw HTML omitted --> you are given an amazing toolbox of functions to combine, create and filter any of those streams <!-- raw HTML omitted --> - The introduction to Reactive Programming you&rsquo;ve been missing</p>
+</blockquote>
+<blockquote>
+<p>Why should I consider adopting RP?
+Reactive Programming raises the level of abstraction of your code so <!-- raw HTML omitted --> you can focus on the interdependence of events that define the business logic <!-- raw HTML omitted -->, rather than having to constantly fiddle with a large amount of implementation details. Code in RP will likely be more concise. - The introduction to Reactive Programming you&rsquo;ve been missing</p>
+</blockquote>
+<blockquote>
+<p>The Combine framework provides a declarative Swift API for processing values over time. These values can represent many kinds of asynchronous events. - The Combine framework documentation</p>
+</blockquote>
+<p>因此，若我們的 app 中有很複雜的 async stream 在交互影響 (ex WWDC 2019, session 722 中的 Login Screen), 選擇使用 MVVM pattern 會較為合理，但由於 ViewModel, ui component 甚至 model layer 都會和特定的 framework 耦合在一起, 將來要替換 framework 的時候，成本也可能跟著升高 (ex. 使用 RxCombine migrate from RxSwift to Combine [<a href="https://github.com/CombineCommunity/RxCombine">6</a>] )。</p>
+<p>我們選用 MVP 作為我們 migration to swfitUI 實驗的 pattern, 讓 presenter 最多只依賴於 Foundation 中的資料結構。</p>
+<p>Migration 的起手式，就是為 VC 加入 <a href="https://github.com/ctwdtw/ToDoDemo/blob/swiftUI/ToDoDemoTests/ToDoDemoTests.swift">unit testing</a>, 這裡只貼 testing case 的 interface, 完整的實作放在 <a href="https://github.com/ctwdtw/ToDoDemo/blob/swiftUI/ToDoDemoTests/ToDoDemoTests.swift">link</a> 裡面：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Swift" data-lang="Swift"><span style="display:flex;"><span><span style="color:#66d9ef">internal</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ToDoDemoTests</span> : XCTestCase {
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">internal</span> <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">test_viewDidLoad_requestToDos</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">internal</span> <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">test_renderTwoSections</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">internal</span> <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">test_renderOneTableViewInputCellOnInputSection</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">internal</span> <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">test_renderEmptyToDos_onEmptyToDo</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">internal</span> <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">test_renderOneToDo_OnOneToDo</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">internal</span> <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">test_renderManyToDo_onManyToDo</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">internal</span> <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">test_renderToDoCounts</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">internal</span> <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">test_renderAddAction</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">internal</span> <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">test_renderAddedToDo_onAdd</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">internal</span> <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">test_disableAddAction_afterAdd</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">internal</span> <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">test_removeToDo_onRemove</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">internal</span> <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">test_shouldHaveNoMemoryLeakAndNoCrash_onGetToDoServiceEmitValueAfterSutDeallocated</span>()
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>接著讓 SwiftUI View 去實作各個 Abstract View Protocol (注意 SwiftUI 提供的各種 property wrapper 都被集中在 view layer, <code>Presenter</code> 是不需要 import SwiftUI 的 )：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Swift" data-lang="Swift"><span style="display:flex;"><span><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">ToDoListView</span>: View {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">ToDoListViewModel</span>: ObservableObject {
+</span></span><span style="display:flex;"><span>        @Published
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> title = <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        @Published
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> todos: [ToDoViewData] = []
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        @Published
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> inputText = <span style="color:#e6db74">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        @Published
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> addActionEnabled = <span style="color:#66d9ef">false</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    @ObservedObject <span style="color:#66d9ef">private</span> <span style="color:#66d9ef">var</span> viewModel: ToDoListViewModel = ToDoListViewModel()
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> body: some View {
+</span></span><span style="display:flex;"><span>        NavigationView {
+</span></span><span style="display:flex;"><span>            List {
+</span></span><span style="display:flex;"><span>                SwiftUI.Section(<span style="color:#e6db74">&#34;input&#34;</span>) {
+</span></span><span style="display:flex;"><span>                    TextField(viewModel.inputText, text: <span style="color:#960050;background-color:#1e0010">$</span>viewModel.inputText)
+</span></span><span style="display:flex;"><span>                        .onChange(of: viewModel.inputText) { newValue <span style="color:#66d9ef">in</span>
+</span></span><span style="display:flex;"><span>                            presenter.inputText(newValue)
+</span></span><span style="display:flex;"><span>                        }
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                
+</span></span><span style="display:flex;"><span>                SwiftUI.Section(<span style="color:#e6db74">&#34;todos&#34;</span>) {
+</span></span><span style="display:flex;"><span>                    ForEach(Array(zip(viewModel.todos.indices, viewModel.todos)), id: <span style="color:#960050;background-color:#1e0010">\</span>.<span style="color:#ae81ff">1.</span>id) { idx, todo <span style="color:#66d9ef">in</span>
+</span></span><span style="display:flex;"><span>                        Button(action: {
+</span></span><span style="display:flex;"><span>                            presenter.removeToDo(at: idx)
+</span></span><span style="display:flex;"><span>                            
+</span></span><span style="display:flex;"><span>                        }, label: {
+</span></span><span style="display:flex;"><span>                            Text(todo.title)
+</span></span><span style="display:flex;"><span>                            
+</span></span><span style="display:flex;"><span>                        })
+</span></span><span style="display:flex;"><span>                    }
+</span></span><span style="display:flex;"><span>                }
+</span></span><span style="display:flex;"><span>                
+</span></span><span style="display:flex;"><span>            }.navigationBarItems(
+</span></span><span style="display:flex;"><span>                trailing: Button(action: {
+</span></span><span style="display:flex;"><span>                    presenter.insertToDo(viewModel.inputText)
+</span></span><span style="display:flex;"><span>                    
+</span></span><span style="display:flex;"><span>                }) {
+</span></span><span style="display:flex;"><span>                    Image(systemName: <span style="color:#e6db74">&#34;plus&#34;</span>)
+</span></span><span style="display:flex;"><span>                }.disabled(<span style="color:#f92672">!</span>viewModel.addActionEnabled)
+</span></span><span style="display:flex;"><span>                
+</span></span><span style="display:flex;"><span>            ).navigationBarTitle(
+</span></span><span style="display:flex;"><span>                Text(viewModel.title),
+</span></span><span style="display:flex;"><span>                displayMode: .inline
+</span></span><span style="display:flex;"><span>            )
+</span></span><span style="display:flex;"><span>        }.onAppear {
+</span></span><span style="display:flex;"><span>            presenter.getInitialViewData()
+</span></span><span style="display:flex;"><span>            presenter.fetchToDo()
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">let</span> presenter: TablePresenter!
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">init</span>(presenter: TablePresenter) {
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">self</span>.presenter = presenter
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">extension</span> <span style="color:#a6e22e">ToDoListView</span>: TitleView {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">didUpDateTitle</span>(<span style="color:#66d9ef">_</span> title: String) {
+</span></span><span style="display:flex;"><span>        viewModel.title = title
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">extension</span> <span style="color:#a6e22e">ToDoListView</span>: TableView {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">didUpdateTable</span>() {
+</span></span><span style="display:flex;"><span>        viewModel.todos = presenter.toDoViewDatas()
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">extension</span> <span style="color:#a6e22e">ToDoListView</span>: AddActionView {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">didUpdateAddActionView</span>(isEnabled: Bool) {
+</span></span><span style="display:flex;"><span>        viewModel.addActionEnabled = isEnabled
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">extension</span> <span style="color:#a6e22e">ToDoListView</span>: InputView {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">didUpdateInputText</span>(<span style="color:#66d9ef">_</span> text: String) {
+</span></span><span style="display:flex;"><span>        viewModel.inputText = text
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">//</span><span style="color:#75715e">MARK:</span><span style="color:#75715e"> - TablePresenter + SwiftUI</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">extension</span> <span style="color:#a6e22e">TablePresenter</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">toDoViewDatas</span>() -&gt; [ToDoViewData] {
+</span></span><span style="display:flex;"><span>        (<span style="color:#ae81ff">0.</span>.&lt;numberOfToDos).map { toDoViewData(at:$0) }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>我們就可以在 <code>AppDelegate</code> 中決定要使用 SwiftUI 或是 UIKit 作為我們 GUI 介面的 Framework 了：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-Swift" data-lang="Swift"><span style="display:flex;"><span><span style="color:#66d9ef">import</span> <span style="color:#a6e22e">UIKit</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">import</span> <span style="color:#a6e22e">SwiftUI</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">@UIApplicationMain</span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">AppDelegate</span>: UIResponder, UIApplicationDelegate {
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">let</span> uikit = <span style="color:#66d9ef">false</span>
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">var</span> window: UIWindow?
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">func</span> <span style="color:#a6e22e">application</span>(<span style="color:#66d9ef">_</span> application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -&gt; Bool {
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> uikit {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">let</span> (vc, <span style="color:#66d9ef">_</span>) = ToDoUIComposer.compose(getToDo: ToDoStore.shared.getToDoItems(completionHandler:))
+</span></span><span style="display:flex;"><span>            window?.rootViewController = UINavigationController(rootViewController: vc)
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>        } <span style="color:#66d9ef">else</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">let</span> (listView, <span style="color:#66d9ef">_</span>) = ToDoSwiftUIComposer.compose(getToDo: ToDoStore.shared.getToDoItems(completionHandler:))
+</span></span><span style="display:flex;"><span>            window?.rootViewController = UIHostingController(rootView: listView)
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">true</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="結果">結果：<a hidden class="anchor" aria-hidden="true" href="#結果">#</a></h3>
+<p>使用 MVP pattern, 我們將基於 UIKit 的 MVC 的 toy project 成功地 migrate 到 swiftUI。完整的 code 可以在 <a href="https://github.com/ctwdtw/ToDoDemo/tree/swiftUI">GitHub</a> 上照到。 MVP 的 migration 策略適用於本身沒有引入 (RxSwift, RxCocoa)/(Combine, CombineCocoa) 的專案，如果專案本身為了簡化 async 邏輯的交互影響 (interdependency) 已經引入了 reactive programming 的套件，則需要再考慮其他的 migration 策略 [<a href="https://github.com/CombineCommunity/RxCombine/issues/4">7</a>]。</p>
+<h3 id="參考資料">參考資料：<a hidden class="anchor" aria-hidden="true" href="#參考資料">#</a></h3>
+<ol>
+<li>Clean Architecture - <a href="https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html">https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html</a></li>
+<li>MVVM - <a href="https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel">https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel</a></li>
+<li>MVP - <a href="https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93presenter">https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93presenter</a></li>
+<li>漫談 iOS 架構：從 MVC 到 VIPER，以及 Redux - <a href="https://chiahsien.github.io/post/common-ios-architecture-from-mvc-to-viper-with-redux/">https://chiahsien.github.io/post/common-ios-architecture-from-mvc-to-viper-with-redux/</a></li>
+<li>The introduction to Reactive Programming you&rsquo;ve been missing - <a href="https://gist.github.com/staltz/868e7e9bc2a7b8c1f754">https://gist.github.com/staltz/868e7e9bc2a7b8c1f754</a></li>
+<li>RxCombine - <a href="https://github.com/CombineCommunity/RxCombine">https://github.com/CombineCommunity/RxCombine</a></li>
+<li>Bridging RxSwift to SwiftUI - <a href="https://github.com/CombineCommunity/RxCombine/issues/4">https://github.com/CombineCommunity/RxCombine/issues/4</a></li>
+<li>單向數據流的函數式 View Controller - <a href="https://onevcat.com/2017/07/state-based-viewcontroller/">https://onevcat.com/2017/07/state-based-viewcontroller/</a></li>
+<li>iOS Lead Essential Program - <a href="https://www.essentialdeveloper.com/">https://www.essentialdeveloper.com/</a></li>
+</ol>
+<h3 id="版本資訊">版本資訊:<a hidden class="anchor" aria-hidden="true" href="#版本資訊">#</a></h3>
+<ul>
+<li>0.1.0 2022/02/08</li>
+</ul>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+    <span>&copy; 2023 <a href="https://examplesite.com/">Programming Notes 程式筆記</a></span>
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

@@ -1,0 +1,21 @@
+baseURL: "https://examplesite.com/"
+title: Programming Notes 程式筆記 
+paginate: 5
+theme: PaperMod
+params:
+  homeInfoParams:
+    Title: PN
+    Content: "Hi, 歡迎光臨 Programming Notes 程式筆記.\n\n
+      這裡的內容有：\n\n
+      \u2028\n\n
+      🚦 測試驅動開發 TDD\n\n
+      📐 設計模式 Design Pattern\n\n
+      📚 軟體工程書籍摘要\n\n
+      🍎 iOS dev.\n\n
+      🖥️ Backend dev. with Python.\n\n
+      🥙 其他有趣的東西 ...\n\n
+      \u2028\n\n
+      有閒來坐 🙂"
+  assets:
+    disableHLJS: true
+    favicon: "/assets/favicon.ico"

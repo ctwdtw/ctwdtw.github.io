@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Programming Notes 程式筆記</title>
+    <link>https://examplesite.com/</link>
+    <description>Recent content on Programming Notes 程式筆記</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Tue, 08 Feb 2022 11:58:39 +0800</lastBuildDate><atom:link href="https://examplesite.com/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>使用 Composite &amp; Decorator Pattern 實作資料的讀取和緩存</title>
+      <link>https://examplesite.com/posts/composite-decorator-fluent-interface/</link>
+      <pubDate>Tue, 08 Feb 2022 11:58:39 +0800</pubDate>
+      
+      <guid>https://examplesite.com/posts/composite-decorator-fluent-interface/</guid>
+      <description>摘要： 本篇筆記介紹如何使用 Decorator Pattern 和 Composite Pattern 來重構 ViewController 中複雜的條件敘述。筆記一開始粗略地描述了用程序式寫法 (Procedure code) 實現需求的問題，接著說明使用物件導向的設計原則和前設計模式可以得到一個更好的解決更好的設計解決方案。文末介紹了如何使用流式接口(Fluent Interface)，提高Composite Pattern結構的可讀性。
+狀況： 在 app 開發的場景中，可能會遇到 PM 開出類似以下的需求：
+app 可以連接網路，抓取 server 端最新的資料，顯示給 user。 app 可以將最新抓取的資料，保存到本地端。 app 可以檢查本地端保存的資料是否在期限內。 app 若本地端的資料在期限內，app 會優先顯示本地端的資料。 app 若本地端的資料過期，app 會抓取 server 端最新的資料。 app 若本地端的資料過期，抓取 server 端資料也失敗，會顯示目前的本地端資料。 app 中有預設的資料，若 app 首次啟動，且無網路，無本地端的資料時，app 會顯示此份資料。 定義問題： 為了完成需求，我們可能會憑直覺地在用條件敘述 (if...else) 在 ViewController 中寫下類似以下的 code： class ViewController { ... ... ... func loadData() { if networkingManager.hasConnectiviy { AF.request(&amp;#34;https://data-url.com&amp;#34;).responseData { [weak self] response in .</description>
+    </item>
+    
+    <item>
+      <title>使用 Decorator Pattern 管理橫切關注點 (cross-cutting-concern) 的程式碼 - 以 threading 為例。</title>
+      <link>https://examplesite.com/posts/decorator-cross-cutting-concern/</link>
+      <pubDate>Tue, 08 Feb 2022 11:58:39 +0800</pubDate>
+      
+      <guid>https://examplesite.com/posts/decorator-cross-cutting-concern/</guid>
+      <description>摘要： 本篇筆記介紹應用 Decorator Pattern 來處理 threading 的相關問題。筆記一開始說明了散落在 UI 層或 Service 層的 threading code 造成的問題，接著用示範了如何使用 Decorator Pattern 來管理 threading 相關的 code。文末最後還簡介了 Decorator 可能的其他應用場景，例如 logging (日誌) 和 authentication (認證) 等 cross-cutting concern (橫切關注點) 的相關問題。
+狀況： 作為一個 iOS dev. ，和 threading 打交道是我們常會遇到的問題。我們習慣將 App 至少分兩層 - UI Layer 和 Model Layer (還可以再細分，為了簡化，筆記中把整個 non-ui 的部分稱之為 Model Layer, 並將 Model Layer 中讀取資料的物件稱為 Service Object)。因為 UIKit 限制我們在 main thread or main queue 去使用 UIKit 大部分的 class [1], 我們可能會寫下這樣的 code:</description>
+    </item>
+    
+    <item>
+      <title>使用 MVP UI Design Pattern 將基於 UIKit 的 Toy project 重構到 SwiftUI</title>
+      <link>https://examplesite.com/posts/mvvm-mvp-refactor-to-swift-ui/</link>
+      <pubDate>Tue, 08 Feb 2022 11:58:39 +0800</pubDate>
+      
+      <guid>https://examplesite.com/posts/mvvm-mvp-refactor-to-swift-ui/</guid>
+      <description>摘要： 本篇筆記實驗如何使用 MVP Pattern 將基於 UIKit 和 MVC Pattern 的 legacy code 遷移到 iOS 平台新的 UI framweork - SwiftUI. 筆記一開始點出了使用 MVC 實作一個 toy project 帶來的問題，與 migrate 到 swiftUI 的動機，接著介紹了 MVVM, MVP Pattern 在 Clean Architecture 的分層結構中所處的位置，與加入 Presentation Layer 所帶來的好處，並為使用 MVP 或 MVVM pattern 進行 SwiftUI 的 migration 做了一個簡單的比較。筆記最後展示了使用 MVP 對一個 toy project 進行 migration 的結果。
+狀況： Apple 在 2019 年的 WWDC 推出了新的 UI framework - SwiftUI。隨著 iOS 15 的問世，SwiftUI 也越來越成熟。SwiftUI 提供宣告式 (declarative) 的 api, 讓開法者可以更有效率的進行 UI 開發，是時候開始將老舊的 codebase migrate 到 swiftUI 了。</description>
+    </item>
+    
+    <item>
+      <title>使用 Polymorphism 簡化 TableView DataSource 中的條件敘述</title>
+      <link>https://examplesite.com/posts/remove-conditional-data-source-using-polymorphism/</link>
+      <pubDate>Tue, 08 Feb 2022 11:58:39 +0800</pubDate>
+      
+      <guid>https://examplesite.com/posts/remove-conditional-data-source-using-polymorphism/</guid>
+      <description>摘要： 本篇筆記介紹了 Replace Conditional with Polymorphism (以多型代替條件) 的重構技巧，並運用此技巧，將 UITableViewDataSource 中的 switch statement 移除掉，得到一個較為乾淨的 code.
+狀況： 我們常在 code base 中看到如下的 tableView data source:
+enum Section: Int { case input = 0, todos, max } override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -&amp;gt; Int { guard let section = Section(rawValue: section) else { fatalError() } switch section { case .input: return 1 case .todos: return todos.count case .max: fatalError() } } override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -&amp;gt; UITableViewCell { guard let section = Section(rawValue: indexPath.</description>
+    </item>
+    
+  </channel>
+</rss>
